@@ -148,6 +148,12 @@ options:
     default: no
     required: false
     version_added: "2.0"
+  buildargs:
+    description:
+      - Set build arguments for the ARG keyword. Requires docker >= 1.9 and docker-py >= 1.6.0.
+    required: false
+    default: null
+    version_added: "2.2"
 
 extends_documentation_fragment:
     - docker
@@ -209,6 +215,15 @@ EXAMPLES = '''
     push: yes
     load_path: my_sinatra.tar
     push: True
+
+- name: Build image with provided arguments
+  docker_image:
+    path: /path/to/build/dir
+    name: my/app
+    state=present
+    buildargs:
+      package_version: 1.2.3
+      stage: prod
 '''
 
 RETURN = '''
@@ -241,6 +256,7 @@ class ImageManager(DockerBaseClass):
         self.check_mode = self.client.check_mode
 
         self.archive_path = parameters.get('archive_path')
+        self.buildargs = parameters.get('buildargs')
         self.container_limits = parameters.get('container_limits')
         self.dockerfile = parameters.get('dockerfile')
         self.force = parameters.get('force')
@@ -464,6 +480,7 @@ class ImageManager(DockerBaseClass):
             pull=self.pull,
             forcerm=self.rm,
             dockerfile=self.dockerfile,
+            buildargs=self.buildargs,
             decode=True
         )
         if self.tag:
@@ -526,7 +543,8 @@ def main():
         rm=dict(type='bool', default=True),
         state=dict(type='str', choices=['absent', 'present'], default='present'),
         tag=dict(type='str', default='latest'),
-        use_tls=dict(type='str', default='no', choices=['no', 'encrypt', 'verify'])
+        use_tls=dict(type='str', default='no', choices=['no', 'encrypt', 'verify']),
+        buildargs=dict(type='dict', default=None)
     )
 
     client = AnsibleDockerClient(
